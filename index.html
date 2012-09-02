@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Fgerrit by pandemicsyn</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Fgerrit</h1>
+        <h2>Why ? Because fark the gerrit ui thats why. </h2>
+        <a href="https://github.com/pandemicsyn/fgerrit" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>fgerrit</h1>
+
+<p>Why ? Because fark the gerrit web ui thats why. <img class="emoji" title=":goberserk:" alt=":goberserk:" src="https://a248.e.akamai.net/assets.github.com/images/icons/emoji/goberserk.png?v5" height="20" width="20" align="absmiddle"></p>
+
+<h2>Wtf is this ?</h2>
+
+<p>A simple git extension that makes interacting with gerrit less painful by
+wrapping the gerrit ssh api. Use it to:</p>
+
+<p>-1 <img class="emoji" title=":sparkles:" alt=":sparkles:" src="https://a248.e.akamai.net/assets.github.com/images/icons/emoji/sparkles.png?v5" height="20" width="20" align="absmiddle">ALL<img class="emoji" title=":sparkles:" alt=":sparkles:" src="https://a248.e.akamai.net/assets.github.com/images/icons/emoji/sparkles.png?v5" height="20" width="20" align="absmiddle"> the reviews!</p>
+
+<p>...or you know, list review's, approve them, whatever floats your boat.</p>
+
+<h2>Configuration</h2>
+
+<p>fgerrit will try to pull gerrit information automagically via your git config. To do so it checks to see if you have a gerrit remote branch by running a <code>git config --get remote.gerrit.url</code>. If you don't have gerrit a remote you can pass in the options at the cli. Or better yet, set the env variable:</p>
+
+<p><code>export GERRIT_URL=ssh://username@gerrit.host.com:29418/yourproject</code></p>
+
+<h2>Usage</h2>
+
+<p>It's just a git extension, just give it a try in a repo that uses gerrit. Heres a few quick examples to get you started.</p>
+
+<p>List all open reviews:</p>
+
+<pre><code>fhines@ubuntu:~/omgmonkeys(master)$ git fgerrit -l`
+====================================================
+= Open reviews for unicorns/meatgrinder            =
+====================================================
+id      (date ) [V|C|A] "commit subject" - submitter
+----------------------------------------------------
+9kl1V   (02:31) [1|-2|0] "Fix bug: #121 snakes on plane" - sammyj
+7b251   (08/21) [1|1|0] "Implements a basic unicorn grinder" - pandemicsyn
+</code></pre>
+
+<p>Wanna see comments and other info on the review with the shortid 7b251 from above ?
+Just run <code>git fgerrit -r 7b251</code>
+Is 7b251 an abomination, think I should have stayed an ops guys ?
+Just run <code>git fgerrit -1 7b251</code> to -1 it!
+Leave a message: <code>git fgerrit -m "switches love packets" 7b251</code></p>
+
+<p>Here's all the options:</p>
+
+<pre><code>Usage:
+        git-fgerrit: [-l] [-r &lt;review&gt;] [-2|1|0|p|P|a &lt;sha1&gt;] [--verified=-1|0|+2]
+            [-m message] [--abandon|--delete|--publish|--restore|--submit]
+            [--user=gerrituser] [--host=gerrithost] [--port=gerritport]
+            [--project &lt;project&gt;]
+
+            Gerrit information defaults to gerrit remote url in git config or
+            the GERRIT_URL env. The options --host, --user, --port, --project
+            will override these defaults.
+
+            Examples:
+            List all pending reviews: git-fgerrit -l
+            To -1 a patchset: git-fgerrit -1 7b251
+            Submit a change: git-fgerrit --submit 7b251
+            View review number 10101: git-fgerrit -r 10101
+            View review with sha1 7b251: git-fgerrit -r 7b251
+
+Options:
+  -h, --help            show this help message and exit
+  -l, --list-all        list pending reviews
+  -r, --review          display review
+  -2, --set-2           score a patchset -2 on code review
+  -1, --set-1           score a patchset -1 on a code review
+  -0, --set-0           score a patchset 0 on a code review
+  -p, --set-plus-1      score a patchset +1 on a code review
+  -P, --set-plus-2      score a patchset +2 on a code review
+  --verified=-1|0|+2    Set a verified score.
+  -a, --approve         Approve a patch set
+  -m "Message", --message="Message"
+                        post message
+  --abandon             Abandon a patch set
+  --delete              Delete a draft patch
+  --publish             Publish a draft patch
+  --restore             Restore an abandoned patch set
+  --submit              Submit a patch set
+  --host=HOST           Gerrit hostname or ip
+  --port=PORT           Gerrit port
+  --user=USER           Gerrit user
+  --project=PROJECT     Gerrit project
+</code></pre>
+
+<h2>Installation</h2>
+
+<ul>
+<li><code>git clone http://github.com/pandemicsyn/fgerrit fgerrit</code></li>
+<li><code>cd fgerrit</code></li>
+</ul><p>Now either install via setup.py or build a debian package with <a href="https://github.com/astraw/stdeb">stdeb</a></p>
+
+<ul>
+<li>via setup.py
+
+<ul>
+<li><code>sudo python setup.py install</code></li>
+</ul>
+</li>
+<li>via stdeb
+
+<ul>
+<li><code>python setup.py --command-packages=stdeb.command bdist_deb</code></li>
+<li><code>sudo dpkg -i deb_dist/python-statsdpy_0.0.X-1_all.deb</code></li>
+</ul>
+</li>
+</ul><p>This will drop the git-fgerrit command into /usr/local/bin so it'll get picked up by git.</p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/pandemicsyn/fgerrit/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/pandemicsyn/fgerrit/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/pandemicsyn/fgerrit"></a> is maintained by <a href="https://github.com/pandemicsyn">pandemicsyn</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
