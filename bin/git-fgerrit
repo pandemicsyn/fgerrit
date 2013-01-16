@@ -84,6 +84,8 @@ class GerritCMD(object):
                         help="Submit a patch set")
         args.add_option('--recheck', action="store_true",
                         help="post recheck message ala openstack gerrit")
+        args.add_option('--reverify', action="store_true",
+                        help="post reverify message ala openstack gerrit")
         args.add_option('--host', default=None,help="Gerrit hostname or ip")
         args.add_option('--port', default=None, help="Gerrit port")
         args.add_option('--user', default=None, help="Gerrit user")
@@ -183,7 +185,9 @@ class GerritCMD(object):
         elif options.submit:
             print fgerrit.submit_change(target)
         elif options.recheck:
-            print fgerrit.post_message(target, "recheck")
+            print fgerrit.post_message(target, "recheck no bug")
+        elif options.reverify:
+            print fgerrit.post_message(target, "reverify no bug")
         elif options.verified:
             valid_scores = ['-1', '0', '+1']
             if options.verified in valid_scores:
