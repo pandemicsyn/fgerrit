@@ -159,7 +159,7 @@ class GerritCMD(object):
         target = arguments[0]
 
         if options.review:
-            print fgerrit.get_review('%s' % target, comments=True, text=True)
+            fgerrit.print_review(target)
         elif options.set_2:
             print fgerrit.code_review(target, "-2")
         elif options.set_1:
