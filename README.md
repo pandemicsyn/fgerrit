@@ -31,11 +31,17 @@ List all open reviews:
 	9kl1V	(02:31) [1|-2|0] "Fix bug: #121 snakes on plane" - sammyj
 	7b251	(08/21) [1|1|0] "Implements a basic unicorn grinder" - pandemicsyn
 
-Wanna see comments and other info on the review with the shortid 7b251 from above ?
-Just run `git fgerrit -r 7b251`
-Is 7b251 an abomination, think I should have stayed an ops guys ?
-Just run `git fgerrit -1 7b251` to -1 it!
-Leave a message: `git fgerrit -m "switches love packets" 7b251`
+Wanna see info on the review with the shortid 7b251 from above?
+
+	git fgerrit -r 7b251
+
+Is id 7b251 an abomination, wanna -1 that crap?
+
+	git fgerrit -1 7b251
+
+Need to drop some knowledge on a patch set?
+
+	git fgerrit -m "switches love packets" 7b251
 
 Here's all the options:
 
