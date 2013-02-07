@@ -5,6 +5,10 @@
 import subprocess
 from datetime import datetime
 import simplejson as json
+import time
+import tempfile
+import os
+
 
 class FGerrit(object):
 
@@ -48,8 +52,7 @@ class FGerrit(object):
             return " ".join(p.stdout.readlines())
 
     def _run_cmd(self, cargs):
-        sshcmd = 'ssh -p %d %s@%s "gerrit %s"' % (self.ssh_port, self.ssh_user,
-                                                  self.ssh_host, cargs)
+        sshcmd = "ssh -p %d %s@%s 'gerrit %s'" % (self.ssh_port, self.ssh_user, self.ssh_host, cargs.replace("'", "'\"'\"'"))
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
@@ -87,7 +90,7 @@ class FGerrit(object):
     def get_review(self, review_id, comments=False, text=False):
         """Either a short id (5264) or long hash"""
         if comments:
-            return self._run_query('%s --comments' % review_id, plain=text)
+            return self._run_query('%s --current-patch-set --comments --commit-message' % review_id, plain=text)
         else:
             return self._run_query(review_id, plain=text)
 
@@ -112,7 +115,19 @@ class FGerrit(object):
         return self._run_cmd(payload)
 
     def post_message(self, review_id, message):
-        payload = "review %s --message='%s'" % (review_id, message)
+        if message == '-':
+            editor = os.environ.get('FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
+            with tempfile.NamedTemporaryFile() as fp:
+                p = subprocess.Popen('%s %s' % (editor, fp.name), shell=True)
+                retval = p.wait()
+                if retval != 0:
+                    raise Exception('Error on editor exit code %d' % retval)
+                message = fp.read().strip()
+        if not message:
+            raise Exception('Abort, no message')
+        payload = "review %s --message='%s'" % (review_id, message.replace("'", "'\"'\"'"))
+        print payload
+        print repr(payload)
         return self._run_cmd(payload)
 
     def verify_change(self, review_id, score, message=None):
@@ -158,7 +173,7 @@ class FGerrit(object):
         title = "Open reviews for %s" % self.project
         tlen = len(title)
         id_header = "id%s" % (" "*(len(reviews[0]['number'])-2))
-        header = '%s \t(date ) [V|C|A] "commit subject" - submitter' % \
+        header = '%s \t(date ) [ V| C| A] "commit subject" - submitter' % \
                 id_header
         print "=" * (len(header)+1)
         print "= %s%s =" % (title, " " * (len(header)-tlen-3))
@@ -168,7 +183,7 @@ class FGerrit(object):
         for r in reviews:
             scores = self._parse_approvals(r)
             if scores:
-                print '%s\t(%s) [%s|%s|%s] "%s" - %s' % (r['currentPatchSet']['revision'][:5],
+                print '%s\t(%s) [%02s|%02s|%02s] "%s" - %s' % (r['currentPatchSet']['revision'][:5],
                                                          self._conv_ts(r['lastUpdated'],
                                                                        terse=True),
                                                          scores['VRIF'],
@@ -177,7 +192,7 @@ class FGerrit(object):
                                                          r['subject'],
                                                          r['owner']['name'])
             else:
-                print '%s\t(%s) [?|?|?] "%s" - %s' % (r['number'],
+                print '%s\t(%s) [  |  |  ] "%s" - %s' % (r['currentPatchSet']['revision'][:5],
                                                       self._conv_ts(r['lastUpdated'], terse=True),
                                                       r['subject'], r['owner']['name'])
 
@@ -189,3 +204,26 @@ class FGerrit(object):
             print ""
             print comment['message']
             print ""
+
+
+    def print_review(self, review_id):
+        data = self.get_review(review_id, comments=True)[0]
+        out = [('Owner', '%s <%s>' % (data['owner']['name'], data['owner']['username']))]
+        if data['branch'] != 'master':
+            out.append(('TARGETED BRANCH', data['branch']))
+        out.extend([('Patch Set Number', data['currentPatchSet']['number']),
+                    ('Patch Set Date', time.asctime(time.localtime(int(data['currentPatchSet']['createdOn'])))),
+                    ('Patch Set Id', data['currentPatchSet']['revision'][:5])])
+        approvals = []
+        for approval in data['currentPatchSet'].get('approvals', []):
+            approvals.append('%+d %s' % (int(approval['value']), approval['by']['username']))
+        out.extend([('Status', ', '.join(sorted(approvals))),
+                    ('Commit Message', data['commitMessage'].strip() + '\n')])
+        for comment in data.get('comments', []):
+            out.extend([('Reviewer', '%s <%s>' % (comment['reviewer']['name'], comment['reviewer']['username'])),
+                        ('Date', time.asctime(time.localtime(int(comment['timestamp'])))),
+                        ('Comment', comment['message'].strip() + '\n')])
+        tlen = max(len(t) for t, v in out)
+        for title, value in out:
+            value = value.replace('\n', '\n' + (' ' * (tlen + 2)))
+            print ('%%0%ds  %%s' % tlen) % (title, value)
