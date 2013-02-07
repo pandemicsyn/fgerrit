@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import os
-import sys
-import subprocess
 import optparse
+import os
+import subprocess
 import urlparse
+
 from fgerrit import FGerrit
+
 
 class GerritCMD(object):
 
@@ -32,84 +33,54 @@ class GerritCMD(object):
                 return None
 
     def main(self):
-        """
-        Retrieve and report cluster info from hosts running recon middleware.
-        """
         usage = '''
-        %prog: [-l][-r <review>][-2|1|0|p|P|a <sha1>][--verified=-1|0|+2 sha1]
-            [-m message][--recheck|--abandon|--delete|--submit <sha1>]
-            [--restore|--publish <sha1>][--user=gerrituser][--host=gerrithost]
-            [--port=gerritport][--project <project>]
+%prog: [options] [<command> [<arguments>]]
 
-            Gerrit information defaults to gerrit remote url in git config or
-            the GERRIT_URL env. The options --host, --user, --port, --project
-            will override these defaults.
+Gerrit information defaults to gerrit remote url in git config or the
+GERRIT_URL env. The options --host, --user, --port, --project will override
+these defaults.
 
-            Examples:
-            List all pending reviews: %prog -l
-            To -1 a patchset: %prog -1 7b251
-            Submit a change: %prog --submit 7b251
-            View review number 10101: %prog -r 10101
-            View review with sha1 7b251: %prog -r 7b251'''
+Examples:
+    List all pending reviews:  %prog
+           View review 7b251:  %prog 7b251
+        To -1 patchset 7b251:  %prog 7b251 -1
+
+Avaliable Commands:
+    <nothing>                lists pending reviews
+    <id>                     shows review information
+    <id> checkout            checks out the code for a review
+    <id> post     [message]  posts a message to a review
+    <id> -2       [message]  indicates a strong "do not merge" opinion
+    <id> -1       [message]  indicates a normal "do not merge" opinion
+    <id>  0       [message]  indicates a neutral opinion
+    <id> +1       [message]  indicates a non-core-reviewr positive opinion
+    <id> +2       [message]  indicates a core-reviewer positive opinion
+    <id> approve  [message]  requests the change be merged
+    <id> recheck             asks for the change to be rechecked
+    <id> reverify            asks for the change to be reverified
+    <id> draft    [message]  indicates the change is a work-in-progress
+    <id> abandon  [message]  requests the change be removed from review
+    <id> delete   [message]  requests the change be removed from the system
+    <id> restore             requests the change be restored for review
+         submit              submits the current branch for review
+         draft               submits the current branch as a work-in-progress
+
+If [message] is not specified, your $FGERRIT_EDITOR or $EDITOR will be loaded
+up for you create a message. If you save an empty message, the command will be
+aborted.
+        '''.strip()
         args = optparse.OptionParser(usage)
-        args.add_option('--list-all', '-l', action="store_true",
-                        help="list pending reviews")
-        args.add_option('--review', '-r', action="store_true",
-                        help="display review")
-        args.add_option('--set-2', '-2', action="store_true",
-                        help="score a patchset -2 on code review")
-        args.add_option('--set-1', '-1', action="store_true",
-                        help="score a patchset -1 on a code review")
-        args.add_option('--set-0', '-0', action="store_true",
-                        help="score a patchset 0 on a code review")
-        args.add_option('--set-plus-1', '-p', action="store_true",
-                        help="score a patchset +1 on a code review")
-        args.add_option('--set-plus-2', '-P', action="store_true",
-                        help="score a patchset +2 on a code review")
-        args.add_option('--verified', metavar="-1|0|+2",
-                        help="Set a verified score.")
-        args.add_option('--approve', '-a', action="store_true",
-                        help="Approve a patch set")
-        args.add_option('--message', '-m', metavar='"Message"',
-                        help="post message")
-        args.add_option('--abandon', action="store_true",
-                        help="Abandon a patch set")
-        args.add_option('--delete', action="store_true",
-                        help="Delete a draft patch")
-        args.add_option('--publish', action="store_true",
-                        help="Publish a draft patch")
-        args.add_option('--restore', action="store_true",
-                        help="Restore an abandoned patch set")
-        args.add_option('--submit', action="store_true",
-                        help="Submit a patch set")
-        args.add_option('--recheck', action="store_true",
-                        help="post recheck message ala openstack gerrit")
-        args.add_option('--reverify', action="store_true",
-                        help="post reverify message ala openstack gerrit")
         args.add_option('--host', default=None,help="Gerrit hostname or ip")
         args.add_option('--port', default=None, help="Gerrit port")
         args.add_option('--user', default=None, help="Gerrit user")
         args.add_option('--project', default=None, help="Gerrit project")
+        args.disable_interspersed_args()
         options, arguments = args.parse_args()
 
         gerrit_user = None
         gerrit_host = None
         gerrit_port = None
         gerrit_project = None
-
-        #obtain list of set options
-        setopts = dict((k, v) for k, v in vars(options).iteritems() if v is not None)
-        if len(setopts) == 0:
-            args.print_help()
-            sys.exit(0)
-        #filter out options that aren't mutually exclusive
-        ignored = ['host', 'port', 'user', 'project']
-        for k in ignored:
-            if k in setopts:
-                del setopts[k]
-        #error if theres any mutually exclusive options set
-        if len(setopts) > 1:
-            args.error("Options %s are mutually exclusive" % setopts.keys())
 
         gurl = self.get_gerrit_url()
         if gurl:
@@ -135,67 +106,88 @@ class GerritCMD(object):
             gerrit_project = options.project
 
         if not gerrit_user:
-            args.error("Couldn't find gerrit user in git config, env, or in args")
+            args.error(
+                "Couldn't find gerrit user in git config, env, or in args")
         if not gerrit_host:
-            args.error("Couldn't find gerrit host in git config, env, or in args")
+            args.error(
+                "Couldn't find gerrit host in git config, env, or in args")
         if not gerrit_port:
-            args.error("Couldn't find gerrit port in git config, env, or in args")
+            args.error(
+                "Couldn't find gerrit port in git config, env, or in args")
         if not gerrit_project:
-            args.error("Couldn't find gerrit project in git config, env, or in args")
+            args.error(
+                "Couldn't find gerrit project in git config, env, or in args")
 
         fgerrit = FGerrit(ssh_user=gerrit_user, ssh_host=gerrit_host,
-                                 project=gerrit_project,
-                                 ssh_port=int(gerrit_port),
-                                 status="open")
-        if options.list_all:
-            fgerrit.print_reviews_list(fgerrit.list_reviews())
-            sys.exit(0)
-
+                          project=gerrit_project, ssh_port=int(gerrit_port),
+                          status="open")
         if not arguments:
-            args.error('You failed to specify a patchset sha1, or short sha1')
-        if len(arguments) > 1:
-            args.error('You specified more than one patchset')
-
-        target = arguments[0]
-
-        if options.review:
-            fgerrit.print_review(target)
-        elif options.set_2:
-            print fgerrit.code_review(target, "-2")
-        elif options.set_1:
-            print fgerrit.code_review(target, "-1")
-        elif options.set_0:
-            print fgerrit.code_review(target, "-0")
-        elif options.set_plus_1:
-            print fgerrit.code_review(target, "+1")
-        elif options.set_plus_2:
-            print fgerrit.code_review(target, "+2")
-        elif options.approve:
-            print fgerrit.approve_review(target, "+1")
-        elif options.message:
-            print fgerrit.post_message(target, options.message)
-        elif options.abandon:
-            print fgerrit.abandon_change(target)
-        elif options.delete:
-            print fgerrit.delete_change(target)
-        elif options.publish:
-            print fgerrit.publish_draft(target)
-        elif options.restore:
-            print fgerrit.restore_change(target)
-        elif options.submit:
-            print fgerrit.submit_change(target)
-        elif options.recheck:
-            print fgerrit.post_message(target, "recheck no bug")
-        elif options.reverify:
-            print fgerrit.post_message(target, "reverify no bug")
-        elif options.verified:
-            valid_scores = ['-1', '0', '+1']
-            if options.verified in valid_scores:
-                print fgerrit.verify_change(target, options.verified)
-            else:
-                args.error('Valid verify scores are: -1 , 0, or +1')
+            fgerrit.print_reviews_list(fgerrit.list_reviews())
+        elif arguments[0] == 'submit':
+            command = arguments.pop(0)
+            if arguments:
+                args.error('%s takes no arguments' % command)
+            fgerrit.submit()
+        elif arguments[0] == 'draft':
+            command = arguments.pop(0)
+            if arguments:
+                args.error('%s takes no arguments' % command)
+            fgerrit.draft()
         else:
-            args.print_help()
+            change_id = arguments.pop(0)
+            if not arguments:
+                fgerrit.print_review(change_id)
+            else:
+                command = arguments.pop(0)
+                if command == 'checkout':
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.checkout(change_id)
+                elif command == 'post':
+                    message = arguments.pop(0) if arguments else ''
+                    if arguments:
+                        args.error('<id> %s [<message>]' % command)
+                    message = fgerrit.get_message(message)
+                    fgerrit.post_message(change_id, message)
+                elif command in ('-2', '-1', '-0', '0', '+0', '+1', '+2'):
+                    if command in ('-0', '+0'):
+                        command = '0'
+                    message = arguments.pop(0) if arguments else ''
+                    if arguments:
+                        args.error('<id> %s [<message>]' % command)
+                    message = fgerrit.get_message(message)
+                    fgerrit.code_review(change_id, command, message)
+                elif command in ('approve', 'approved'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.approve_review(change_id, "+1")
+                elif command in ('recheck'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.post_message(change_id, "recheck no bug")
+                elif command in ('reverify'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.post_message(change_id, "reverify no bug")
+                elif command in ('draft', 'drafted'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.publish_draft(change_id)
+                elif command in ('abandon', 'abandoned'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.abandon_change(change_id)
+                elif command in ('delete', 'deleted'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.delete_change(change_id)
+                elif command in ('restore', 'restored'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.restore_change(change_id)
+                else:
+                    args.error('Unknown command %s' % command)
+
 
 if __name__ == '__main__':
     cmd = GerritCMD()
