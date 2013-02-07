@@ -69,29 +69,22 @@ class FGerrit(object):
     def list_reviews(self):
         return self._run_query('status:%s project:%s --current-patch-set' % (self.status,
                                                                              self.project))
-    def _parse_approvals(self, review, detailed=False):
-        if detailed:
-            approvals = []
-        else:
-            approvals = {'VRIF': 0 , 'CRVW': 0, 'APRV': 0, 'SUBM': 0}
-        if 'approvals' not in review['currentPatchSet']:
-            return None
-        for i in review['currentPatchSet']['approvals']:
-            if i:
-                if detailed:
-                    if i:
-                        approvals.append(i)
-                else:
-                    if i['value'] < 0:
-                        if i['value'] < approvals[i['type']]:
-                            approvals[i['type']] = i['value']
-                    elif i['value'] > approvals[i['type']]:
-                        approvals[i['type']] = i['value']
-        return approvals
 
-    def get_approvals(self, review_id, detailed=False):
-        review = self._run_query('%s --current-patch-set' % review_id)
-        return self._parse_approvals(self, review[0], detailed)
+    def _parse_approvals(self, review):
+        retval = [' ', ' ', ' ']
+        for i in review.get('currentPatchSet', {}).get('approvals', []):
+            typ = i['type']
+            idx = {'VRIF': 0, 'CRVW': 1, 'APRV': 2}.get(typ)
+            if idx is not None:
+                val = int(i['value'])
+                if val < 0:
+                    retval[idx] = '-'
+                elif typ == 'CRVW':
+                    if val > 1 and retval[idx] == ' ':
+                        retval[idx] = '+'
+                elif val > 0 and retval[idx] == ' ':
+                    retval[idx] = '+'
+        return retval
 
     def get_review(self, review_id, comments=False, text=False):
         """Either a short id (5264) or long hash"""
@@ -173,37 +166,26 @@ class FGerrit(object):
             raise Exception('Score should be one of: %s' % ' '.join(valid_scores))
 
     def print_reviews_list(self, reviews):
-        title = "Open reviews for %s" % self.project
+        title = "Open Reviews for %s" % self.project
         tlen = len(title)
-        id_header = "id%s" % (" "*(len(reviews[0]['number'])-2))
-        header = '%s   when   V  C  A  submitter / description' % \
-                id_header
-        print "=" * (self.full_width - 1)
-        print "= %s%s =" % (title, " " * (self.full_width - tlen - 5))
-        print "=" * (self.full_width - 1)
-        print header
-        print "-" * (self.full_width - 1)
+        sep = "=" * (self.full_width - 1)
+        print sep
+        print title + " " * (self.full_width - tlen - 1)
+        print sep
+        print 'ID      When  VCA  Submitter: Description'
+        sep = "-" * (self.full_width - 1)
+        print sep
         for r in reviews:
-            scores = self._parse_approvals(r)
-            if scores:
-                print '%s  %s  %02s %02s %02s  %s <%s>' % (
-                    r['currentPatchSet']['revision'][:5],
-                    self._conv_ts(r['lastUpdated'], terse=True),
-                    scores['VRIF'],
-                    scores['CRVW'],
-                    scores['APRV'],
+            v, c, a = self._parse_approvals(r)
+            print '%s  %s  %s%s%s  %s' % (
+                r['currentPatchSet']['revision'][:5],
+                self._conv_ts(r['lastUpdated'], terse=True),
+                v, c, a,
+                self.rewrap('%s <%s>: %s' % (
                     r['owner']['name'],
-                    r['owner']['username'])
-                print '                        %s' % (
-                    self.rewrap(r['subject'], 24))
-            else:
-                print '%s  (%s) [  |  |  ] %s <%s>' % (
-                    r['currentPatchSet']['revision'][:5],
-                    self._conv_ts(r['lastUpdated'], terse=True),
-                    r['owner']['name'],
-                    r['owner']['username'])
-                print '\n                        %s' % (
-                    self.rewrap(r['subject'], 24))
+                    r['owner']['username'],
+                    r['subject']), 19))
+            print sep
 
     def print_review_comments(self, review):
         for comment in review[0]['comments']:
