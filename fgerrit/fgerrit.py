@@ -7,6 +7,7 @@ from datetime import datetime
 import simplejson as json
 import time
 import tempfile
+import textwrap
 import os
 
 
@@ -19,6 +20,7 @@ class FGerrit(object):
         self.ssh_port = ssh_port
         self.project = project
         self.status = status
+        self.full_width = int(os.popen('stty size', 'r').read().split()[1])
 
     def _conv_ts(self, timestamp, terse=False):
         if terse:
@@ -174,28 +176,34 @@ class FGerrit(object):
         title = "Open reviews for %s" % self.project
         tlen = len(title)
         id_header = "id%s" % (" "*(len(reviews[0]['number'])-2))
-        header = '%s  ( when) [ V| C| A] "commit subject" - submitter' % \
+        header = '%s   when   V  C  A  submitter / description' % \
                 id_header
-        print "=" * (len(header)+1)
-        print "= %s%s =" % (title, " " * (len(header)-tlen-3))
-        print "=" * (len(header)+1)
+        print "=" * (self.full_width - 1)
+        print "= %s%s =" % (title, " " * (self.full_width - tlen - 5))
+        print "=" * (self.full_width - 1)
         print header
-        print "-" * (len(header)+1)
+        print "-" * (self.full_width - 1)
         for r in reviews:
             scores = self._parse_approvals(r)
             if scores:
-                print '%s  (%s) [%02s|%02s|%02s] "%s" - %s' % (r['currentPatchSet']['revision'][:5],
-                                                         self._conv_ts(r['lastUpdated'],
-                                                                       terse=True),
-                                                         scores['VRIF'],
-                                                         scores['CRVW'],
-                                                         scores['APRV'],
-                                                         r['subject'],
-                                                         r['owner']['name'])
+                print '%s  %s  %02s %02s %02s  %s <%s>' % (
+                    r['currentPatchSet']['revision'][:5],
+                    self._conv_ts(r['lastUpdated'], terse=True),
+                    scores['VRIF'],
+                    scores['CRVW'],
+                    scores['APRV'],
+                    r['owner']['name'],
+                    r['owner']['username'])
+                print '                        %s' % (
+                    self.rewrap(r['subject'], 24))
             else:
-                print '%s  (%s) [  |  |  ] "%s" - %s' % (r['currentPatchSet']['revision'][:5],
-                                                      self._conv_ts(r['lastUpdated'], terse=True),
-                                                      r['subject'], r['owner']['name'])
+                print '%s  (%s) [  |  |  ] %s <%s>' % (
+                    r['currentPatchSet']['revision'][:5],
+                    self._conv_ts(r['lastUpdated'], terse=True),
+                    r['owner']['name'],
+                    r['owner']['username'])
+                print '\n                        %s' % (
+                    self.rewrap(r['subject'], 24))
 
     def print_review_comments(self, review):
         for comment in review[0]['comments']:
@@ -205,6 +213,14 @@ class FGerrit(object):
             print ""
             print comment['message']
             print ""
+
+    def rewrap(self, text, indent):
+        text_width = self.full_width - indent - 1
+        indention = '\n' + ' ' * indent
+        return indention.join(
+            indention.join(textwrap.wrap(v, width=text_width))
+            for v in text.split('\n')
+        )
 
 
     def print_review(self, review_id):
@@ -226,8 +242,7 @@ class FGerrit(object):
                         ('Comment', comment['message'].strip() + '\n')])
         tlen = max(len(t) for t, v in out)
         for title, value in out:
-            value = value.replace('\n', '\n' + (' ' * (tlen + 2)))
-            print ('%%0%ds  %%s' % tlen) % (title, value)
+            print ('%%0%ds  %%s' % tlen) % (title, self.rewrap(value, tlen+2))
 
     def checkout(self, change_id):
         data = self.get_review(change_id, comments=True)[0]
