@@ -22,11 +22,15 @@ class FGerrit(object):
 
     def _conv_ts(self, timestamp, terse=False):
         if terse:
-            if datetime.today().date() == \
-                    datetime.fromtimestamp(timestamp).date():
-                return datetime.fromtimestamp(timestamp).strftime('%H:%M')
+            when = time.time() - timestamp
+            if when < 60:
+                return '%4.1fs' % when
+            elif when < 3600:
+                return '%4.1fm' % (when / 60)
+            elif when < 86400:
+                return '%4.1fh' % (when / 3600)
             else:
-                return datetime.fromtimestamp(timestamp).strftime('%m/%d')
+                return '%4.1fd' % (when / 86400)
         else:
             return datetime.fromtimestamp(int(timestamp))
 
@@ -173,7 +177,7 @@ class FGerrit(object):
         title = "Open reviews for %s" % self.project
         tlen = len(title)
         id_header = "id%s" % (" "*(len(reviews[0]['number'])-2))
-        header = '%s \t(date ) [ V| C| A] "commit subject" - submitter' % \
+        header = '%s \t( when) [ V| C| A] "commit subject" - submitter' % \
                 id_header
         print "=" * (len(header)+1)
         print "= %s%s =" % (title, " " * (len(header)-tlen-3))
