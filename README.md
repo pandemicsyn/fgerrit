@@ -31,53 +31,61 @@ List all open reviews:
 	9kl1V	(02:31) [1|-2|0] "Fix bug: #121 snakes on plane" - sammyj
 	7b251	(08/21) [1|1|0] "Implements a basic unicorn grinder" - pandemicsyn
 
-Wanna see comments and other info on the review with the shortid 7b251 from above ?
-Just run `git fgerrit -r 7b251`
-Is 7b251 an abomination, think I should have stayed an ops guys ?
-Just run `git fgerrit -1 7b251` to -1 it!
-Leave a message: `git fgerrit -m "switches love packets" 7b251`
+Wanna see info on the review with the shortid 7b251 from above?
+
+	git fgerrit 7b251
+
+Is id 7b251 an abomination, wanna -1 that crap?
+
+	git fgerrit 7b251 -1
+
+Need to drop some knowledge on a patch set?
+
+	git fgerrit 7b251 -m "switches love packets"
 
 Here's all the options:
 
-    Usage:
-            git-fgerrit: [-l] [-r <review>] [-2|1|0|p|P|a <sha1>] [--verified=-1|0|+2]
-                [-m message] [--abandon|--delete|--publish|--restore|--submit]
-                [--user=gerrituser] [--host=gerrithost] [--port=gerritport]
-                [--project <project>]
+    Usage: git-fgerrit: [options] [<command> [<arguments>]]
 
-                Gerrit information defaults to gerrit remote url in git config or
-                the GERRIT_URL env. The options --host, --user, --port, --project
-                will override these defaults.
+    Gerrit information defaults to gerrit remote url in git config or the
+    GERRIT_URL env. The options --host, --user, --port, --project will override
+    these defaults.
 
-                Examples:
-                List all pending reviews: git-fgerrit -l
-                To -1 a patchset: git-fgerrit -1 7b251
-                Submit a change: git-fgerrit --submit 7b251
-                View review number 10101: git-fgerrit -r 10101
-                View review with sha1 7b251: git-fgerrit -r 7b251
+    Examples:
+        List all pending reviews:  git-fgerrit
+               View review 7b251:  git-fgerrit 7b251
+            To -1 patchset 7b251:  git-fgerrit 7b251 -1
+
+    Avaliable Commands:
+        <nothing>                lists pending reviews
+        <id>                     shows review information
+        <id> checkout            checks out the code for a review
+        <id> post     [message]  posts a message to a review
+        <id> -2       [message]  indicates a strong "do not merge" opinion
+        <id> -1       [message]  indicates a normal "do not merge" opinion
+        <id>  0       [message]  indicates a neutral opinion
+        <id> +1       [message]  indicates a non-core-reviewr positive opinion
+        <id> +2       [message]  indicates a core-reviewer positive opinion
+        <id> approve  [message]  requests the change be merged
+        <id> recheck             asks for the change to be rechecked
+        <id> reverify            asks for the change to be reverified
+        <id> draft    [message]  indicates the change is a work-in-progress
+        <id> abandon  [message]  requests the change be removed from review
+        <id> delete   [message]  requests the change be removed from the system
+        <id> restore             requests the change be restored for review
+             submit              submits the current branch for review
+             draft               submits the current branch as a work-in-progress
+
+    If [message] is not specified, your $FGERRIT_EDITOR or $EDITOR will be loaded
+    up for you create a message. If you save an empty message, the command will be
+    aborted.
 
     Options:
-      -h, --help            show this help message and exit
-      -l, --list-all        list pending reviews
-      -r, --review          display review
-      -2, --set-2           score a patchset -2 on code review
-      -1, --set-1           score a patchset -1 on a code review
-      -0, --set-0           score a patchset 0 on a code review
-      -p, --set-plus-1      score a patchset +1 on a code review
-      -P, --set-plus-2      score a patchset +2 on a code review
-      --verified=-1|0|+2    Set a verified score.
-      -a, --approve         Approve a patch set
-      -m "Message", --message="Message"
-                            post message
-      --abandon             Abandon a patch set
-      --delete              Delete a draft patch
-      --publish             Publish a draft patch
-      --restore             Restore an abandoned patch set
-      --submit              Submit a patch set
-      --host=HOST           Gerrit hostname or ip
-      --port=PORT           Gerrit port
-      --user=USER           Gerrit user
-      --project=PROJECT     Gerrit project
+      -h, --help         show this help message and exit
+      --host=HOST        Gerrit hostname or ip
+      --port=PORT        Gerrit port
+      --user=USER        Gerrit user
+      --project=PROJECT  Gerrit project
 
 ## Installation
 
