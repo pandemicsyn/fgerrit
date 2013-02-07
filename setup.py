@@ -21,5 +21,5 @@ setup(
         'Programming Language :: Python :: 2.6',
         ],
     install_requires=install_requires,
-    scripts=['bin/git-fgerrit', 'bin/git-fg']
+    scripts=['bin/git-fgerrit']
     )

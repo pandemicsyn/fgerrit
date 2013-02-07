@@ -207,24 +207,40 @@ class FGerrit(object):
 
     def print_review(self, review_id):
         data = self.get_review(review_id, comments=True)[0]
-        out = [('Owner', '%s <%s>' % (data['owner']['name'], data['owner']['username']))]
+        out = [
+            ('Owner',
+             '%s <%s>' % (data['owner']['name'], data['owner']['username']))]
         if data['branch'] != 'master':
             out.append(('TARGETED BRANCH', data['branch']))
-        out.extend([('Patch Set Number', data['currentPatchSet']['number']),
-                    ('Patch Set Date', time.asctime(time.localtime(int(data['currentPatchSet']['createdOn'])))),
-                    ('Patch Set Id', data['currentPatchSet']['revision'][:5])])
+        out.extend([
+            ('Patch Set Number', data['currentPatchSet']['number']),
+            ('Patch Set Date',
+             time.asctime(time.localtime(int(
+                data['currentPatchSet']['createdOn'])))),
+            ('Patch Set Id', data['currentPatchSet']['revision'][:5])])
         approvals = []
         for approval in data['currentPatchSet'].get('approvals', []):
-            approvals.append('%+d %s' % (int(approval['value']), approval['by']['username']))
-        out.extend([('Status', ', '.join(sorted(approvals))),
-                    ('Commit Message', data['commitMessage'].strip() + '\n')])
+            approvals.append(
+                '%+d %s' % (int(approval['value']), approval['by']['username']))
+        out.extend([
+            ('Status', ', '.join(sorted(approvals))),
+            ('Commit Message', data['commitMessage'].strip())])
         for comment in data.get('comments', []):
-            out.extend([('Reviewer', '%s <%s>' % (comment['reviewer']['name'], comment['reviewer']['username'])),
-                        ('Date', time.asctime(time.localtime(int(comment['timestamp'])))),
-                        ('Comment', comment['message'].strip() + '\n')])
+            out.extend([
+                ('Reviewer',
+                 '%s <%s>' % (comment['reviewer']['name'],
+                              comment['reviewer']['username'])),
+                ('Date',
+                 time.asctime(time.localtime(int(comment['timestamp'])))),
+                ('Comment', comment['message'].strip())])
         tlen = max(len(t) for t, v in out)
+        sep = '-' * (self.full_width - 1)
+        print sep
         for title, value in out:
+            if title == 'Reviewer':
+                print sep
             print ('%%0%ds  %%s' % tlen) % (title, self.rewrap(value, tlen+2))
+        print sep
 
     def checkout(self, change_id):
         data = self.get_review(change_id, comments=True)[0]
