@@ -186,24 +186,23 @@ class FGerrit(object):
         for r in reviews:
             scores = self._parse_approvals(r)
             if scores:
-                print '%s  %s  %02s %02s %02s  %s <%s>' % (
+                sum_line = "%s <%s> - %s" % (r['owner']['name'], r['owner']['username'], r['subject'])
+                wrapped_sum = self.rewrap(sum_line, 24)
+                print '%s  %s  %02s %02s %02s  %s' % (
                     r['currentPatchSet']['revision'][:5],
                     self._conv_ts(r['lastUpdated'], terse=True),
                     scores['VRIF'],
                     scores['CRVW'],
                     scores['APRV'],
-                    r['owner']['name'],
-                    r['owner']['username'])
-                print '                        %s' % (
-                    self.rewrap(r['subject'], 24))
+                    wrapped_sum)
+
             else:
-                print '%s  (%s) [  |  |  ] %s <%s>' % (
+                sum_line = "%s <%s> - %s" % (r['owner']['name'], r['owner']['username'], r['subject'])
+                wrapped_sum = self.rewrap(sum_line, 24)
+                print '%s  (%s) [  |  |  ] %s' % (
                     r['currentPatchSet']['revision'][:5],
                     self._conv_ts(r['lastUpdated'], terse=True),
-                    r['owner']['name'],
-                    r['owner']['username'])
-                print '\n                        %s' % (
-                    self.rewrap(r['subject'], 24))
+                    wrapped_sum)
 
     def print_review_comments(self, review):
         for comment in review[0]['comments']:
