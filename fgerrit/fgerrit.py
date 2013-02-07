@@ -114,10 +114,6 @@ class FGerrit(object):
         payload = "review %s --restore" % patchset
         return self._run_cmd(payload)
 
-    def submit_change(self, patchset):
-        payload = "review %s --submit" % patchset
-        return self._run_cmd(payload)
-
     def get_message(self, message):
         if not message:
             editor = os.environ.get('FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
@@ -232,3 +228,22 @@ class FGerrit(object):
         for title, value in out:
             value = value.replace('\n', '\n' + (' ' * (tlen + 2)))
             print ('%%0%ds  %%s' % tlen) % (title, value)
+
+    def checkout(self, change_id):
+        data = self.get_review(change_id, comments=True)[0]
+        cmd = ['git', 'review', '--download', data['id']]
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
+
+    def submit(self):
+        cmd = ['git', 'review']
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
+
+    def draft(self):
+        cmd = ['git', 'review', '--draft']
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))

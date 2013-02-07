@@ -46,20 +46,24 @@ Examples:
         To -1 patchset 7b251:  %prog 7b251 -1
 
 Avaliable Commands:
-              <no command>  lists pending reviews
-                      <id>  shows review information
-       <id> post [message]  posts a message to a review
-         <id> -2 [message]  indicates a strong "do not merge" opinion
-         <id> -1 [message]  indicates a normal "do not merge" opinion
-          <id> 0 [message]  indicates a neutral opinion
-         <id> +1 [message]  indicates a non-core-reviewr positive opinion
-         <id> +2 [message]  indicates a core-reviewer positive opinion
-    <id> approve [message]  requests the change be merged
-    <id> abandon [message]  requests the change be removed from review
-     <id> delete [message]  requests the change be removed from the system
-      <id> draft [message]  indicates the change is a work-in-progress
-              <id> recheck  asks for the change to be rechecked
-             <id> reverify  asks for the change to be reverified
+    <nothing>                lists pending reviews
+    <id>                     shows review information
+    <id> checkout            checks out the code for a review
+    <id> post     [message]  posts a message to a review
+    <id> -2       [message]  indicates a strong "do not merge" opinion
+    <id> -1       [message]  indicates a normal "do not merge" opinion
+    <id>  0       [message]  indicates a neutral opinion
+    <id> +1       [message]  indicates a non-core-reviewr positive opinion
+    <id> +2       [message]  indicates a core-reviewer positive opinion
+    <id> approve  [message]  requests the change be merged
+    <id> recheck             asks for the change to be rechecked
+    <id> reverify            asks for the change to be reverified
+    <id> draft    [message]  indicates the change is a work-in-progress
+    <id> abandon  [message]  requests the change be removed from review
+    <id> delete   [message]  requests the change be removed from the system
+    <id> restore             requests the change be restored for review
+         submit              submits the current branch for review
+         draft               submits the current branch as a work-in-progress
 
 If [message] is not specified, your $FGERRIT_EDITOR or $EDITOR will be loaded
 up for you create a message. If you save an empty message, the command will be
@@ -119,18 +123,32 @@ aborted.
                           status="open")
         if not arguments:
             fgerrit.print_reviews_list(fgerrit.list_reviews())
+        elif arguments[0] == 'submit':
+            command = arguments.pop(0)
+            if arguments:
+                args.error('%s takes no arguments' % command)
+            fgerrit.submit()
+        elif arguments[0] == 'draft':
+            command = arguments.pop(0)
+            if arguments:
+                args.error('%s takes no arguments' % command)
+            fgerrit.draft()
         else:
-            psid = arguments.pop(0)
+            change_id = arguments.pop(0)
             if not arguments:
-                fgerrit.print_review(psid)
+                fgerrit.print_review(change_id)
             else:
                 command = arguments.pop(0)
-                if command == 'post':
+                if command == 'checkout':
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.checkout(change_id)
+                elif command == 'post':
                     message = arguments.pop(0) if arguments else ''
                     if arguments:
                         args.error('<id> %s [<message>]' % command)
                     message = fgerrit.get_message(message)
-                    fgerrit.post_message(psid, message)
+                    fgerrit.post_message(change_id, message)
                 elif command in ('-2', '-1', '-0', '0', '+0', '+1', '+2'):
                     if command in ('-0', '+0'):
                         command = '0'
@@ -138,35 +156,35 @@ aborted.
                     if arguments:
                         args.error('<id> %s [<message>]' % command)
                     message = fgerrit.get_message(message)
-                    fgerrit.code_review(psid, command, message)
+                    fgerrit.code_review(change_id, command, message)
                 elif command in ('approve', 'approved'):
                     if arguments:
                         args.error('<id> %s' % command)
-                    fgerrit.approve_review(psid, "+1")
-                elif command in ('abandon', 'abandoned'):
-                    if arguments:
-                        args.error('<id> %s' % command)
-                    fgerrit.abandon_change(psid)
-                elif command in ('delete', 'deleted'):
-                    if arguments:
-                        args.error('<id> %s' % command)
-                    fgerrit.delete_change(psid)
-                elif command in ('draft', 'drafted'):
-                    if arguments:
-                        args.error('<id> %s' % command)
-                    fgerrit.publish_draft(psid)
-                elif command in ('restore', 'restored'):
-                    if arguments:
-                        args.error('<id> %s' % command)
-                    fgerrit.restore_draft(psid)
+                    fgerrit.approve_review(change_id, "+1")
                 elif command in ('recheck'):
                     if arguments:
                         args.error('<id> %s' % command)
-                    fgerrit.post_message(psid, "recheck no bug")
+                    fgerrit.post_message(change_id, "recheck no bug")
                 elif command in ('reverify'):
                     if arguments:
                         args.error('<id> %s' % command)
-                    fgerrit.post_message(psid, "reverify no bug")
+                    fgerrit.post_message(change_id, "reverify no bug")
+                elif command in ('draft', 'drafted'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.publish_draft(change_id)
+                elif command in ('abandon', 'abandoned'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.abandon_change(change_id)
+                elif command in ('delete', 'deleted'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.delete_change(change_id)
+                elif command in ('restore', 'restored'):
+                    if arguments:
+                        args.error('<id> %s' % command)
+                    fgerrit.restore_change(change_id)
                 else:
                     args.error('Unknown command %s' % command)
 
