@@ -41,7 +41,7 @@ Is id 7b251 an abomination, wanna -1 that crap?
 
 Need to drop some knowledge on a patch set?
 
-	git fgerrit 7b251 -m "switches love packets"
+	git fgerrit 7b251 post "switches love packets"
 
 Here's all the options:
 

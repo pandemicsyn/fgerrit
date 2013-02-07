@@ -70,7 +70,7 @@ up for you create a message. If you save an empty message, the command will be
 aborted.
         '''.strip()
         args = optparse.OptionParser(usage)
-        args.add_option('--host', default=None,help="Gerrit hostname or ip")
+        args.add_option('--host', default=None, help="Gerrit hostname or ip")
         args.add_option('--port', default=None, help="Gerrit port")
         args.add_option('--user', default=None, help="Gerrit user")
         args.add_option('--project', default=None, help="Gerrit project")

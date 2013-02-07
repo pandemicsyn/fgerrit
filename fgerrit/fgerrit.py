@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-#http://gerrit-documentation.googlecode.com/svn/Documentation/2.2.2/cmd-query.html
+# http://gerrit-documentation.googlecode.com/svn/Documentation/2.2.2/cmd-
+# query.html
 
+import pkg_resources
 import subprocess
 from datetime import datetime
 import simplejson as json
@@ -39,10 +41,10 @@ class FGerrit(object):
     def _run_query(self, qargs, plain=False):
         if not plain:
             sshcmd = 'ssh -p %d %s@%s "gerrit query --format=JSON %s"' % \
-                        (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
+                (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
         else:
             sshcmd = 'ssh -p %d %s@%s "gerrit query --format=TEXT %s"' % \
-                        (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
+                (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
@@ -67,8 +69,9 @@ class FGerrit(object):
         return " ".join(p.stdout.readlines())
 
     def list_reviews(self):
-        return self._run_query('status:%s project:%s --current-patch-set' % (self.status,
-                                                                             self.project))
+        return self._run_query(
+            'status:%s project:%s --current-patch-set' % (self.status,
+                                                          self.project))
 
     def _parse_approvals(self, review):
         retval = [' ', ' ', ' ']
@@ -101,17 +104,14 @@ class FGerrit(object):
         payload = "review %s --abandon" % patchset
         return self._run_cmd(payload)
 
-    def publish_draft(self, patchset):
-        payload = "review %s --restore" % patchset
-        return self._run_cmd(payload)
-
     def restore_change(self, patchset):
         payload = "review %s --restore" % patchset
         return self._run_cmd(payload)
 
     def get_message(self, message):
         if not message:
-            editor = os.environ.get('FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
+            editor = os.environ.get(
+                'FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
             with tempfile.NamedTemporaryFile() as fp:
                 p = subprocess.Popen('%s %s' % (editor, fp.name), shell=True)
                 retval = p.wait()
@@ -132,38 +132,42 @@ class FGerrit(object):
         valid_scores = ["-1", "0", "+1"]
         if message:
             payload = "review %s --verified %s --message='%s'" % (review_id,
-                                                                     score,
-                                                                     message)
+                                                                  score,
+                                                                  message)
         else:
             payload = "review %s --verified %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
-            raise Exception('Score should be one of: %s' % ' '.join(valid_scores))
+            raise Exception(
+                'Score should be one of: %s' % ' '.join(valid_scores))
 
     def code_review(self, review_id, score, message=None):
         valid_scores = ["-2", "-1", "0", "+1", "+2"]
         if message:
-            payload = "review %s --code-review %s --message=%s" % (review_id, score, message)
+            payload = "review %s --code-review %s --message=%s" % (
+                review_id, score, message)
         else:
             payload = "review %s --code-review %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
-            raise Exception('Score should be one of: %s' % ' '.join(valid_scores))
+            raise Exception(
+                'Score should be one of: %s' % ' '.join(valid_scores))
 
     def approve_review(self, review_id, score, message=None):
         valid_scores = ["0", "+1"]
         if message:
             payload = "approve %s --approve %s --message='%s'" % (review_id,
-                                                                   score,
-                                                                   message)
+                                                                  score,
+                                                                  message)
         else:
             payload = "approve %s --approve %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
-            raise Exception('Score should be one of: %s' % ' '.join(valid_scores))
+            raise Exception(
+                'Score should be one of: %s' % ' '.join(valid_scores))
 
     def print_reviews_list(self, reviews):
         title = "Open Reviews for %s" % self.project
@@ -189,7 +193,7 @@ class FGerrit(object):
 
     def print_review_comments(self, review):
         for comment in review[0]['comments']:
-            print "="*25
+            print "=" * 25
             print "%s - %s:" % (self._conv_ts(comment['timestamp']),
                                 comment['reviewer']['username'])
             print ""
@@ -204,7 +208,6 @@ class FGerrit(object):
             for v in text.split('\n')
         )
 
-
     def print_review(self, review_id):
         data = self.get_review(review_id, comments=True)[0]
         out = [
@@ -215,13 +218,12 @@ class FGerrit(object):
         out.extend([
             ('Patch Set Number', data['currentPatchSet']['number']),
             ('Patch Set Date',
-             time.asctime(time.localtime(int(
-                data['currentPatchSet']['createdOn'])))),
+             time.asctime(time.localtime(int(data['currentPatchSet']['createdOn'])))),
             ('Patch Set Id', data['currentPatchSet']['revision'][:5])])
         approvals = []
         for approval in data['currentPatchSet'].get('approvals', []):
-            approvals.append(
-                '%+d %s' % (int(approval['value']), approval['by']['username']))
+            approvals.append('%+d %s' % (int(approval['value']),
+                             approval['by']['username']))
         out.extend([
             ('Status', ', '.join(sorted(approvals))),
             ('Commit Message', data['commitMessage'].strip())])
@@ -239,10 +241,13 @@ class FGerrit(object):
         for title, value in out:
             if title == 'Reviewer':
                 print sep
-            print ('%%0%ds  %%s' % tlen) % (title, self.rewrap(value, tlen+2))
+            print (
+                '%%0%ds  %%s' % tlen) % (title, self.rewrap(value, tlen + 2))
         print sep
 
     def checkout(self, change_id):
+        if 'git-review' not in pkg_resources.working_set.by_key:
+            raise Exception('git-review is not installed')
         data = self.get_review(change_id, comments=True)[0]
         cmd = ['git', 'review', '--download', data['id']]
         error_code = subprocess.Popen(cmd).wait()
@@ -250,12 +255,16 @@ class FGerrit(object):
             raise Exception('Error code %d from %s' % (error_code, cmd))
 
     def submit(self):
+        if 'git-review' in pkg_resources.working_set.by_key:
+            raise Exception('git-review is not installed')
         cmd = ['git', 'review']
         error_code = subprocess.Popen(cmd).wait()
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
 
     def draft(self):
+        if 'git-review' not in pkg_resources.working_set.by_key:
+            raise Exception('git-review is not installed')
         cmd = ['git', 'review', '--draft']
         error_code = subprocess.Popen(cmd).wait()
         if error_code != 0:

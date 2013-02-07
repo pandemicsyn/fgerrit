@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 install_requires = []
 
-version = "0.0.1"
+version = "0.2.0"
 name = "fgerrit"
 
 setup(
