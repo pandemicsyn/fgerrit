@@ -43,6 +43,7 @@ class FGerrit(object):
         else:
             sshcmd = 'ssh -p %d %s@%s "gerrit query --format=TEXT %s"' % \
                         (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
+        print repr(sshcmd)
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
@@ -172,19 +173,19 @@ class FGerrit(object):
         print sep
         print title + " " * (self.full_width - tlen - 1)
         print sep
-        print 'ID      When  VCA  Submitter: Description'
+        print 'ID       When  VCA  Submitter: Description'
         sep = "-" * (self.full_width - 1)
         print sep
         for r in reviews:
             v, c, a = self._parse_approvals(r)
             print '%s  %s  %s%s%s  %s' % (
-                r['currentPatchSet']['revision'][:5],
+                r['id'][:6],
                 self._conv_ts(r['lastUpdated'], terse=True),
                 v, c, a,
                 self.rewrap('%s <%s>: %s' % (
                     r['owner']['name'],
                     r['owner']['username'],
-                    r['subject']), 19))
+                    r['subject']), 20))
             print sep
 
     def print_review_comments(self, review):
