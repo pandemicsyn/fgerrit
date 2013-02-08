@@ -10,6 +10,7 @@ import simplejson as json
 import time
 import tempfile
 import textwrap
+import pydoc
 import os
 
 
@@ -22,7 +23,16 @@ class FGerrit(object):
         self.ssh_port = ssh_port
         self.project = project
         self.status = status
-        self.full_width = int(os.popen('stty size', 'r').read().split()[1])
+        term_info = os.popen('stty size', 'r').read().split()
+        self.term_rows = int(term_info[0])
+        self.full_width = int(term_info[1])
+
+    def _cprint(self, output):
+        """either print output or invoke pager"""
+        if self.term_rows < sum([len(i.split('\n')) for i in output]):
+            pydoc.pager('\n'.join(output))
+        else:
+            print '\n'.join(output)
 
     def _conv_ts(self, timestamp, terse=False):
         if terse:
@@ -45,6 +55,7 @@ class FGerrit(object):
         else:
             sshcmd = 'ssh -p %d %s@%s "gerrit query --format=TEXT %s"' % \
                 (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
+        print repr(sshcmd)
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
@@ -92,7 +103,7 @@ class FGerrit(object):
     def get_review(self, review_id, comments=False, text=False):
         """Either a short id (5264) or long hash"""
         if comments:
-            return self._run_query('%s --current-patch-set --comments --commit-message' % review_id, plain=text)
+            return self._run_query('commit:%s --current-patch-set --comments --commit-message' % review_id, plain=text)
         else:
             return self._run_query(review_id, plain=text)
 
@@ -125,17 +136,17 @@ class FGerrit(object):
     def post_message(self, review_id, message):
         if not message:
             raise Exception('Abort, no message')
-        payload = "review %s --message=%s" % (review_id, message)
+        payload = "review commit:%s --message=%s" % (review_id, message)
         return self._run_cmd(payload)
 
     def verify_change(self, review_id, score, message=None):
         valid_scores = ["-1", "0", "+1"]
         if message:
-            payload = "review %s --verified %s --message='%s'" % (review_id,
+            payload = "review commit:%s --verified %s --message='%s'" % (review_id,
                                                                   score,
                                                                   message)
         else:
-            payload = "review %s --verified %s" % (review_id, score)
+            payload = "review commit:%s --verified %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
@@ -145,10 +156,10 @@ class FGerrit(object):
     def code_review(self, review_id, score, message=None):
         valid_scores = ["-2", "-1", "0", "+1", "+2"]
         if message:
-            payload = "review %s --code-review %s --message=%s" % (
+            payload = "review commit:%s --code-review %s --message=%s" % (
                 review_id, score, message)
         else:
-            payload = "review %s --code-review %s" % (review_id, score)
+            payload = "review commit:%s --code-review %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
@@ -158,11 +169,11 @@ class FGerrit(object):
     def approve_review(self, review_id, score, message=None):
         valid_scores = ["0", "+1"]
         if message:
-            payload = "approve %s --approve %s --message='%s'" % (review_id,
+            payload = "approve commit:%s --approve %s --message='%s'" % (review_id,
                                                                   score,
                                                                   message)
         else:
-            payload = "approve %s --approve %s" % (review_id, score)
+            payload = "approve commit:%s --approve %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
@@ -173,32 +184,25 @@ class FGerrit(object):
         title = "Open Reviews for %s" % self.project
         tlen = len(title)
         sep = "=" * (self.full_width - 1)
-        print sep
-        print title + " " * (self.full_width - tlen - 1)
-        print sep
-        print 'ID       When  VCA  Submitter: Description'
+        output = []
+        output.append(sep)
+        output.append(title + " " * (self.full_width - tlen - 1))
+        output.append(sep)
+        output.append('ID       When  VCA  Submitter: Description')
         sep = "-" * (self.full_width - 1)
-        print sep
+        output.append(sep)
         for r in reviews:
             v, c, a = self._parse_approvals(r)
-            print '%s  %s  %s%s%s  %s' % (
-                r['id'][:6],
+            output.append('%s  %s  %s%s%s  %s' % (
+                r['currentPatchSet']['revision'][:6],
                 self._conv_ts(r['lastUpdated'], terse=True),
                 v, c, a,
                 self.rewrap('%s <%s>: %s' % (
                     r['owner']['name'],
                     r['owner']['username'],
-                    r['subject']), 20))
-            print sep
-
-    def print_review_comments(self, review):
-        for comment in review[0]['comments']:
-            print "=" * 25
-            print "%s - %s:" % (self._conv_ts(comment['timestamp']),
-                                comment['reviewer']['username'])
-            print ""
-            print comment['message']
-            print ""
+                    r['subject']), 20)))
+            output.append(sep)
+        self._cprint(output)
 
     def rewrap(self, text, indent):
         text_width = self.full_width - indent - 1
@@ -210,6 +214,7 @@ class FGerrit(object):
 
     def print_review(self, review_id):
         data = self.get_review(review_id, comments=True)[0]
+        output = []
         out = [
             ('Owner',
              '%s <%s>' % (data['owner']['name'], data['owner']['username']))]
@@ -219,7 +224,7 @@ class FGerrit(object):
             ('Patch Set Number', data['currentPatchSet']['number']),
             ('Patch Set Date',
              time.asctime(time.localtime(int(data['currentPatchSet']['createdOn'])))),
-            ('Patch Set Id', data['currentPatchSet']['revision'][:5])])
+            ('Patch Set Id', data['currentPatchSet']['revision'])])
         approvals = []
         for approval in data['currentPatchSet'].get('approvals', []):
             approvals.append('%+d %s' % (int(approval['value']),
@@ -237,13 +242,15 @@ class FGerrit(object):
                 ('Comment', comment['message'].strip())])
         tlen = max(len(t) for t, v in out)
         sep = '-' * (self.full_width - 1)
-        print sep
+        output.append(sep)
         for title, value in out:
             if title == 'Reviewer':
-                print sep
-            print (
-                '%%0%ds  %%s' % tlen) % (title, self.rewrap(value, tlen + 2))
-        print sep
+                output.append(sep)
+            output.append(('%%0%ds  %%s' % tlen) %
+                          (title, self.rewrap(value, tlen + 2)))
+        output.append(sep)
+        self._cprint(output)
+
 
     def checkout(self, change_id):
         if 'git-review' not in pkg_resources.working_set.by_key:
