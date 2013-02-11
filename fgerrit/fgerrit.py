@@ -168,11 +168,11 @@ class FGerrit(object):
     def approve_review(self, review_id, score, message=None):
         valid_scores = ["0", "+1"]
         if message:
-            payload = "approve %s --approve %s --message='%s'" % (review_id,
+            payload = "approve %s --approved %s --message='%s'" % (review_id,
                                                                   score,
                                                                   message)
         else:
-            payload = "approve %s --approve %s" % (review_id, score)
+            payload = "approve %s --approved %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
