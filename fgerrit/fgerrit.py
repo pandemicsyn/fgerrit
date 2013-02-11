@@ -261,7 +261,7 @@ class FGerrit(object):
             raise Exception('Error code %d from %s' % (error_code, cmd))
 
     def submit(self):
-        if 'git-review' in pkg_resources.working_set.by_key:
+        if 'git-review' not in pkg_resources.working_set.by_key:
             raise Exception('git-review is not installed')
         cmd = ['git', 'review']
         error_code = subprocess.Popen(cmd).wait()
