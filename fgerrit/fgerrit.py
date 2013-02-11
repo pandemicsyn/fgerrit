@@ -55,7 +55,6 @@ class FGerrit(object):
         else:
             sshcmd = 'ssh -p %d %s@%s "gerrit query --format=TEXT %s"' % \
                 (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
-        print repr(sshcmd)
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
@@ -136,17 +135,17 @@ class FGerrit(object):
     def post_message(self, review_id, message):
         if not message:
             raise Exception('Abort, no message')
-        payload = "review commit:%s --message=%s" % (review_id, message)
+        payload = "review %s --message=%s" % (review_id, message)
         return self._run_cmd(payload)
 
     def verify_change(self, review_id, score, message=None):
         valid_scores = ["-1", "0", "+1"]
         if message:
-            payload = "review commit:%s --verified %s --message='%s'" % (review_id,
+            payload = "review %s --verified %s --message='%s'" % (review_id,
                                                                   score,
                                                                   message)
         else:
-            payload = "review commit:%s --verified %s" % (review_id, score)
+            payload = "review %s --verified %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
@@ -156,10 +155,10 @@ class FGerrit(object):
     def code_review(self, review_id, score, message=None):
         valid_scores = ["-2", "-1", "0", "+1", "+2"]
         if message:
-            payload = "review commit:%s --code-review %s --message=%s" % (
+            payload = "review %s --code-review %s --message=%s" % (
                 review_id, score, message)
         else:
-            payload = "review commit:%s --code-review %s" % (review_id, score)
+            payload = "review %s --code-review %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
@@ -169,11 +168,11 @@ class FGerrit(object):
     def approve_review(self, review_id, score, message=None):
         valid_scores = ["0", "+1"]
         if message:
-            payload = "approve commit:%s --approve %s --message='%s'" % (review_id,
+            payload = "approve %s --approve %s --message='%s'" % (review_id,
                                                                   score,
                                                                   message)
         else:
-            payload = "approve commit:%s --approve %s" % (review_id, score)
+            payload = "approve %s --approve %s" % (review_id, score)
         if score in valid_scores:
             return self._run_cmd(payload)
         else:
