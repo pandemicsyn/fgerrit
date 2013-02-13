@@ -14,6 +14,7 @@ import pydoc
 import os
 
 
+
 class FGerrit(object):
 
     def __init__(self, ssh_user, ssh_host, project, ssh_port=29418,
@@ -26,6 +27,14 @@ class FGerrit(object):
         term_info = os.popen('stty size', 'r').read().split()
         self.term_rows = int(term_info[0])
         self.full_width = int(term_info[1])
+
+    def _color_reset(self):
+        self.HEADER = ''
+        self.OKBLUE = ''
+        self.OKGREEN = ''
+        self.WARNING = ''
+        self.FAIL = ''
+        self.ENDC = ''
 
     def _cprint(self, output):
         """either print output or invoke pager"""
@@ -192,14 +201,24 @@ class FGerrit(object):
         output.append(sep)
         for r in reviews:
             v, c, a = self._parse_approvals(r)
-            output.append('%s  %s  %s%s%s  %s' % (
-                r['currentPatchSet']['revision'][:6],
-                self._conv_ts(r['lastUpdated'], terse=True),
-                v, c, a,
-                self.rewrap('%s <%s>: %s' % (
-                    r['owner']['name'],
-                    r['owner']['username'],
-                    r['subject']), 20)))
+            endc = '\033[0m'
+            color = '\033[0m'
+            if v == '+' and c == '+' and a == '+':
+                color = '\033[94m'
+            elif v == '+' and c == '+':
+                color = '\033[92m'
+            elif v == '-' and c == '-':
+                color = '\033[91m'
+            elif v == '-' or c == '-':
+                color = '\033[93m'
+            output.append(color + '%s  %s  %s%s%s  %s' % (
+                          r['currentPatchSet']['revision'][:6],
+                          self._conv_ts(r['lastUpdated'], terse=True),
+                          v, c, a,
+                          self.rewrap('%s <%s>: %s' % (
+                          r['owner']['name'],
+                          r['owner']['username'],
+                          r['subject']), 20)) + endc)
             output.append(sep)
         self._cprint(output)
 
@@ -249,7 +268,6 @@ class FGerrit(object):
                           (title, self.rewrap(value, tlen + 2)))
         output.append(sep)
         self._cprint(output)
-
 
     def checkout(self, change_id):
         if 'git-review' not in pkg_resources.working_set.by_key:
