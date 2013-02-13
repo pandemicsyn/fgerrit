@@ -96,9 +96,6 @@ Now either install via setup.py or build a debian package with [stdeb](https://g
 
 - via setup.py
 	- `sudo python setup.py install`
-- via stdeb
-	- `python setup.py --command-packages=stdeb.command bdist_deb`
-	- `sudo dpkg -i deb_dist/python-statsdpy_0.0.X-1_all.deb`
 
 This will drop the git-fgerrit command into /usr/local/bin so it'll get picked up by git.
 
