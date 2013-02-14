@@ -194,13 +194,16 @@ class FGerrit(object):
         sep = "-" * (self.full_width - 1)
         output.append(sep)
         for r in reviews:
+            s = ''
+            if r['status'] == 'WORKINPROGRESS':
+                s = '[DRAFT] '
             v, c, a = self._parse_approvals(r)
             output.append('%s  %s  %s%s%s  %s' % (
                 r['currentPatchSet']['revision'][:6],
                 self._conv_ts(r['lastUpdated'], terse=True),
                 v, c, a,
                 self.rewrap('%s <%s>: %s' % (
-                    r['owner']['name'],
+                    s + r['owner']['name'],
                     r['owner']['username'],
                     r['subject']), 20)))
             output.append(sep)
