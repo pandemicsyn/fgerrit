@@ -14,6 +14,50 @@ import pydoc
 import os
 
 
+VALID_SCORES = ['-2', '-1', '-0', '0', '+0', '+1', '+2']
+
+
+def normalize_score(score):
+    if score not in VALID_SCORES:
+        raise Exception('Invalid score %r' % score)
+    if score in ('-0', '+0'):
+        score = '0'
+    return score
+
+
+def arg_encode(arg):
+    # We're going to end up with the original value enclosed by single quotes,
+    # excepting the single quotes in the original value; those will be encoded
+    # in double quotes. Yes, kinda awful to explain.
+    # test = 'test'
+    # "test" = '"test"'
+    # 'test' = "'"'test'"'"
+    # "it's" = '"it'"'"'s"'
+    arg = "'" + arg.replace("'", "'\"'\"'") + "'"
+    if arg.startswith("''"):
+        arg = arg[2:]
+    if arg.endswith("''"):
+        arg = arg[:-2]
+    return arg
+
+
+def get_message(self, message):
+    if not message:
+        editor = os.environ.get(
+            'FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
+        with tempfile.NamedTemporaryFile() as fp:
+            p = subprocess.Popen('%s %s' % (editor, fp.name), shell=True)
+            retval = p.wait()
+            if retval != 0:
+                raise Exception('Error on editor exit code %d' % retval)
+            message = fp.read().strip()
+        if not message:
+            raise Exception('Abort, no message')
+    if message == '-':
+        message = ''
+    return message
+
+
 class FGerrit(object):
 
     def __init__(self, ssh_user, ssh_host, project, ssh_port=29418,
@@ -70,7 +114,9 @@ class FGerrit(object):
             return " ".join(p.stdout.readlines())
 
     def _run_cmd(self, cargs):
-        sshcmd = "ssh -p %d %s@%s 'gerrit %s'" % (self.ssh_port, self.ssh_user, self.ssh_host, cargs.replace("'", "'\"'\"'"))
+        sshcmd = "ssh -p %d %s@%s %s" % (
+            self.ssh_port, self.ssh_user, self.ssh_host,
+            arg_encode('gerrit ' + arg_encode(cargs)))
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
@@ -118,66 +164,23 @@ class FGerrit(object):
         payload = "review %s --restore" % patchset
         return self._run_cmd(payload)
 
-    def get_message(self, message):
-        if not message:
-            editor = os.environ.get(
-                'FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
-            with tempfile.NamedTemporaryFile() as fp:
-                p = subprocess.Popen('%s %s' % (editor, fp.name), shell=True)
-                retval = p.wait()
-                if retval != 0:
-                    raise Exception('Error on editor exit code %d' % retval)
-                message = fp.read().strip()
-            if not message:
-                raise Exception('Abort, no message')
-        return "'%s'" % message.replace("'", "'\"'\"'")
-
     def post_message(self, review_id, message):
-        if not message:
-            raise Exception('Abort, no message')
-        payload = "review %s --message=%s" % (review_id, message)
+        payload = "review %s --message=%s" % (review_id, arg_encode(message))
         return self._run_cmd(payload)
 
-    def verify_change(self, review_id, score, message=None):
-        valid_scores = ["-1", "0", "+1"]
-        if message:
-            payload = "review %s --verified %s --message='%s'" % (review_id,
-                                                                  score,
-                                                                  message)
-        else:
-            payload = "review %s --verified %s" % (review_id, score)
-        if score in valid_scores:
-            return self._run_cmd(payload)
-        else:
-            raise Exception(
-                'Score should be one of: %s' % ' '.join(valid_scores))
-
     def code_review(self, review_id, score, message=None):
-        valid_scores = ["-2", "-1", "0", "+1", "+2"]
+        score = normalize_score(score)
+        payload = 'review %s --code-review %s' % (review_id, score)
         if message:
-            payload = "review %s --code-review %s --message=%s" % (
-                review_id, score, message)
-        else:
-            payload = "review %s --code-review %s" % (review_id, score)
-        if score in valid_scores:
-            return self._run_cmd(payload)
-        else:
-            raise Exception(
-                'Score should be one of: %s' % ' '.join(valid_scores))
+            payload += ' --message=%s' % arg_encode(message)
+        return self._run_cmd(payload)
 
-    def approve_review(self, review_id, score, message=None):
-        valid_scores = ["0", "+1"]
-        if message:
-            payload = "approve %s --approved %s --message='%s'" % (review_id,
-                                                                  score,
-                                                                  message)
-        else:
-            payload = "approve %s --approved %s" % (review_id, score)
-        if score in valid_scores:
-            return self._run_cmd(payload)
-        else:
-            raise Exception(
-                'Score should be one of: %s' % ' '.join(valid_scores))
+    def approve_review(self, review_id, score):
+        score = normalize_score(score)
+        if score not in ('0', '+1'):
+            raise Exception('Approval score should be 0 or +1.')
+        payload = 'approve %s --approved %s' % (review_id, score)
+        return self._run_cmd(payload)
 
     def print_reviews_list(self, reviews):
         title = "Open Reviews for %s" % self.project

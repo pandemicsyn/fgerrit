@@ -5,7 +5,7 @@ import os
 import subprocess
 import urlparse
 
-from fgerrit import FGerrit
+from fgerrit import FGerrit, get_message, normalize_score, VALID_SCORES
 
 
 class GerritCMD(object):
@@ -67,7 +67,7 @@ Avaliable Commands:
 
 If [message] is not specified, your $FGERRIT_EDITOR or $EDITOR will be loaded
 up for you create a message. If you save an empty message, the command will be
-aborted.
+aborted. You can use a single dash as the message if you truly want no message.
         '''.strip()
         args = optparse.OptionParser(usage)
         args.add_option('--host', default=None, help="Gerrit hostname or ip")
@@ -145,18 +145,25 @@ aborted.
                     fgerrit.checkout(change_id)
                 elif command == 'post':
                     message = arguments.pop(0) if arguments else ''
-                    if arguments:
-                        args.error('<id> %s [<message>]' % command)
-                    message = fgerrit.get_message(message)
-                    fgerrit.post_message(change_id, message)
-                elif command in ('-2', '-1', '-0', '0', '+0', '+1', '+2'):
-                    if command in ('-0', '+0'):
-                        command = '0'
+                    if message in VALID_SCORES:
+                        score = message
+                        message = arguments.pop(0) if arguments else ''
+                        if arguments:
+                            args.error('<id> %s [<message>]' % command)
+                        message = get_message(message)
+                        fgerrit.code_review(review_id, score, message)
+                    else:
+                        if arguments:
+                            args.error('<id> %s [<message>]' % command)
+                        message = get_message(message)
+                        fgerrit.post_message(change_id, message)
+                elif command in VALID_SCORES:
+                    score = normalize_score(command)
                     message = arguments.pop(0) if arguments else ''
                     if arguments:
                         args.error('<id> %s [<message>]' % command)
-                    message = fgerrit.get_message(message)
-                    fgerrit.code_review(change_id, command, message)
+                    message = get_message(message)
+                    fgerrit.code_review(change_id, score, message)
                 elif command in ('approve', 'approved'):
                     if arguments:
                         args.error('<id> %s' % command)
