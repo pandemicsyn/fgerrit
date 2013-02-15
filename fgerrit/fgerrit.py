@@ -41,7 +41,7 @@ def arg_encode(arg):
     return arg
 
 
-def get_message(self, message):
+def get_message(message):
     if not message:
         editor = os.environ.get(
             'FGERRIT_EDITOR', os.environ.get('EDITOR', 'vi'))
@@ -116,7 +116,7 @@ class FGerrit(object):
     def _run_cmd(self, cargs):
         sshcmd = "ssh -p %d %s@%s %s" % (
             self.ssh_port, self.ssh_user, self.ssh_host,
-            arg_encode('gerrit ' + arg_encode(cargs)))
+            arg_encode('gerrit ' + cargs))
         p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
