@@ -229,7 +229,8 @@ class FGerrit(object):
             ('Patch Set Number', data['currentPatchSet']['number']),
             ('Patch Set Date',
              time.asctime(time.localtime(int(data['currentPatchSet']['createdOn'])))),
-            ('Patch Set Id', data['currentPatchSet']['revision'])])
+            ('Patch Set Id', data['currentPatchSet']['revision']),
+            ('Patch Ref', data['currentPatchSet']['ref'])])
         approvals = []
         for approval in data['currentPatchSet'].get('approvals', []):
             approvals.append('%+d %s' % (int(approval['value']),
@@ -256,6 +257,17 @@ class FGerrit(object):
         output.append(sep)
         self._cprint(output)
 
+
+    def diff(self, change_id):
+        data = self.get_review(change_id, comments=True)[0]
+        cmd = ['git', 'fetch', 'gerrit', data['currentPatchSet']['ref']]
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
+        cmd = ['git', 'diff', 'master..FETCH_HEAD']
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
 
     def checkout(self, change_id):
         if 'git-review' not in pkg_resources.working_set.by_key:
