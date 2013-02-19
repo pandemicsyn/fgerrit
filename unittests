@@ -1,0 +1,4 @@
+#!/bin/bash
+
+nosetests fgerrit/test/unit --exe --with-coverage --cover-package fgerrit \
+                            --cover-erase
