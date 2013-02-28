@@ -148,7 +148,8 @@ class FGerrit(object):
     def get_review(self, review_id, comments=False, text=False):
         """Either a short id (5264) or long hash"""
         if comments:
-            return self._run_query('commit:%s --current-patch-set --comments --commit-message' % review_id, plain=text)
+            return self._run_query('commit:%s --current-patch-set --comments '
+                                   '--commit-message' % review_id, plain=text)
         else:
             return self._run_query(review_id, plain=text)
 
@@ -227,8 +228,8 @@ class FGerrit(object):
             out.append(('TARGETED BRANCH', data['branch']))
         out.extend([
             ('Patch Set Number', data['currentPatchSet']['number']),
-            ('Patch Set Date',
-             time.asctime(time.localtime(int(data['currentPatchSet']['createdOn'])))),
+            ('Patch Set Date', time.asctime(time.localtime(int(
+                data['currentPatchSet']['createdOn'])))),
             ('Patch Set Id', data['currentPatchSet']['revision']),
             ('Patch Ref', data['currentPatchSet']['ref'])])
         approvals = []
@@ -253,10 +254,9 @@ class FGerrit(object):
             if title == 'Reviewer':
                 output.append(sep)
             output.append(('%%0%ds  %%s' % tlen) %
-                          (title, self.rewrap(value, tlen + 2)))
+                          (title, self.rewrap(value, tlen + 2).encode('utf8')))
         output.append(sep)
         self._cprint(output)
-
 
     def diff(self, change_id):
         data = self.get_review(change_id, comments=True)[0]
