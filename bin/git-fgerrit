@@ -53,8 +53,8 @@ Avaliable Commands:
     <id> checkout [patch#]   checks out the code for a review; the optional
                              [patch#] lets you checkout a specific patchset
                              note that this will change your FETCH_HEAD
-    <id> diffsince [patch#]  shows a diff what you have checked out locally vs.
-                             the code at <id>
+    <id> diffsince [patch#]  shows a diff of what you have checked out locally
+                             vs. the code at <id>
                              [patch#] lets you diff a specific patchset
                              note that this will change your FETCH_HEAD
     <id> post     [message]  posts a message to a review
