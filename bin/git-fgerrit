@@ -48,7 +48,7 @@ Examples:
 Avaliable Commands:
     <nothing>                lists pending reviews
     <id>                     shows review information
-    <id> diff                shows a diff of the code to your master branch,
+    <id> show                like git-show but for the patch set <id>,
                              note that this will change your FETCH_HEAD
     <id> checkout            checks out the code for a review
     <id> post     [message]  posts a message to a review

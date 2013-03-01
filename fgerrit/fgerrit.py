@@ -258,13 +258,13 @@ class FGerrit(object):
         output.append(sep)
         self._cprint(output)
 
-    def diff(self, change_id):
+    def show(self, change_id):
         data = self.get_review(change_id, comments=True)[0]
         cmd = ['git', 'fetch', 'gerrit', data['currentPatchSet']['ref']]
         error_code = subprocess.Popen(cmd).wait()
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
-        cmd = ['git', 'diff', 'master..FETCH_HEAD']
+        cmd = ['git', 'show', 'FETCH_HEAD']
         error_code = subprocess.Popen(cmd).wait()
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
