@@ -53,6 +53,10 @@ Avaliable Commands:
     <id> checkout [patch#]   checks out the code for a review; the optional
                              [patch#] lets you checkout a specific patchset
                              note that this will change your FETCH_HEAD
+    <id> diffsince [patch#]  shows a diff what you have checked out locally vs.
+                             the code at <id>
+                             [patch#] lets you diff a specific patchset
+                             note that this will change your FETCH_HEAD
     <id> post     [message]  posts a message to a review
     <id> -2       [message]  indicates a strong "do not merge" opinion
     <id> -1       [message]  indicates a normal "do not merge" opinion
@@ -143,10 +147,10 @@ aborted. You can use a single dash as the message if you truly want no message.
                 fgerrit.print_review(change_id)
             else:
                 command = arguments.pop(0)
-                if command == 'diff':
+                if command == 'show':
                     if arguments:
                         args.error('<id> %s' % command)
-                    fgerrit.diff(change_id)
+                    fgerrit.show(change_id)
                 elif command == 'checkout':
                     patchset_number = None
                     if arguments:
@@ -154,6 +158,13 @@ aborted. You can use a single dash as the message if you truly want no message.
                     if arguments:
                         args.error('<id> %s [patchset#]' % command)
                     fgerrit.checkout(change_id, patchset_number)
+                elif command == 'diffsince':
+                    patchset_number = None
+                    if arguments:
+                        patchset_number = arguments.pop(0)
+                    if arguments:
+                        args.error('<id> %s [patchset#]' % command)
+                    fgerrit.diffsince(change_id, patchset_number)
                 elif command == 'post':
                     message = arguments.pop(0) if arguments else ''
                     if message in VALID_SCORES:

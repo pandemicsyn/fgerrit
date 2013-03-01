@@ -287,6 +287,22 @@ class FGerrit(object):
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
 
+    def diffsince(self, change_id, patchset_number=None):
+        data = self.get_review(change_id, comments=True)[0]
+        ref = data['currentPatchSet']['ref']
+        if patchset_number:
+            ref = ref.rsplit('/', 1)[0] + '/' + patchset_number
+        else:
+            patchset_number = ref.rsplit('/', 1)[1]
+        cmd = ['git', 'fetch', 'gerrit', ref]
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
+        cmd = ['git', 'diff', 'FETCH_HEAD..HEAD']
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
+
     def submit(self):
         if 'git-review' not in pkg_resources.working_set.by_key:
             raise Exception('git-review is not installed')
