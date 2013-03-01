@@ -269,11 +269,20 @@ class FGerrit(object):
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
 
-    def checkout(self, change_id):
-        if 'git-review' not in pkg_resources.working_set.by_key:
-            raise Exception('git-review is not installed')
+    def checkout(self, change_id, patchset_number=None):
         data = self.get_review(change_id, comments=True)[0]
-        cmd = ['git', 'review', '--download', data['id']]
+        ref = data['currentPatchSet']['ref']
+        if patchset_number:
+            ref = ref.rsplit('/', 1)[0] + '/' + patchset_number
+        else:
+            patchset_number = ref.rsplit('/', 1)[1]
+        cmd = ['git', 'fetch', 'gerrit', ref]
+        error_code = subprocess.Popen(cmd).wait()
+        if error_code != 0:
+            raise Exception('Error code %d from %s' % (error_code, cmd))
+        cmd = ['git', 'checkout', '-b',
+               'review-' + data['topic'] + '-ps' + patchset_number,
+               'FETCH_HEAD']
         error_code = subprocess.Popen(cmd).wait()
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
