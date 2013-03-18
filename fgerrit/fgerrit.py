@@ -184,17 +184,28 @@ class FGerrit(object):
         return self._run_cmd(payload)
 
     def print_reviews_list(self, reviews):
+        try:
+            mark = os.path.getmtime('.fgerrit-mark')
+        except OSError:
+            mark = 0
         title = "Open Reviews for %s" % self.project
+        if mark:
+            title += " since " + time.asctime(time.localtime(mark))
         tlen = len(title)
         sep = "=" * (self.full_width - 1)
         output = []
         output.append(sep)
         output.append(title + " " * (self.full_width - tlen - 1))
         output.append(sep)
-        output.append('ID       When  VCA  Submitter: Description')
-        sep = "-" * (self.full_width - 1)
-        output.append(sep)
+        header_printed = False
         for r in reviews:
+            if r['lastUpdated'] < mark:
+                continue
+            if not header_printed:
+                output.append('ID       When  VCA  Submitter: Description')
+                sep = "-" * (self.full_width - 1)
+                output.append(sep)
+                header_printed = True
             s = ''
             if r['status'] == 'WORKINPROGRESS':
                 s = '[DRAFT] '
