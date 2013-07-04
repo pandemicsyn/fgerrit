@@ -254,7 +254,7 @@ class FGerrit(object):
             out.extend([
                 ('Reviewer',
                  '%s <%s>' % (comment['reviewer']['name'],
-                              comment['reviewer']['username'])),
+                              comment['reviewer'].get('username', 'unknown'))),
                 ('Date',
                  time.asctime(time.localtime(int(comment['timestamp'])))),
                 ('Comment', comment['message'].strip())])
