@@ -74,9 +74,9 @@ class FGerrit(object):
     def _cprint(self, output):
         """either print output or invoke pager"""
         if self.term_rows < sum([len(i.split('\n')) for i in output]):
-            pydoc.pager('\n'.join(output))
+            pydoc.pager('\n'.join(output).encode('utf8'))
         else:
-            print '\n'.join(output)
+            print '\n'.join(output).encode('utf8')
 
     def _conv_ts(self, timestamp, terse=False):
         if terse:
@@ -183,7 +183,7 @@ class FGerrit(object):
         payload = 'approve %s --approved %s' % (review_id, score)
         return self._run_cmd(payload)
 
-    def print_reviews_list(self, reviews):
+    def print_reviews_list(self, reviews, show_wip=False, branches=['master']):
         try:
             mark = os.path.getmtime('.fgerrit-mark')
         except OSError:
@@ -201,6 +201,10 @@ class FGerrit(object):
         for r in reviews:
             if r['lastUpdated'] < mark:
                 continue
+            if r['status'] == 'WORKINPROGRESS' and not show_wip:
+                continue
+            if r['branch'] not in branches:
+                continue
             if not header_printed:
                 output.append('ID       When  VCA  Submitter: Description')
                 sep = "-" * (self.full_width - 1)
@@ -208,7 +212,9 @@ class FGerrit(object):
                 header_printed = True
             s = ''
             if r['status'] == 'WORKINPROGRESS':
-                s = '[DRAFT] '
+                s += '[WIP] '
+            if r['branch'] != 'master':
+                s += '[%s] ' % r['branch']
             v, c, a = self._parse_approvals(r)
             output.append('%s  %s  %s%s%s  %s' % (
                 r['currentPatchSet']['revision'][:6],

@@ -84,6 +84,13 @@ aborted. You can use a single dash as the message if you truly want no message.
         args.add_option('--port', default=None, help="Gerrit port")
         args.add_option('--user', default=None, help="Gerrit user")
         args.add_option('--project', default=None, help="Gerrit project")
+        args.add_option(
+            '--wip', action='store_true',
+            help="Include works-in-progress in the listing of pending reviews")
+        args.add_option(
+            '--branches',
+            help="The branch names to include in the listing of pending "
+                 "reviews; defaults to just master.")
         args.disable_interspersed_args()
         options, arguments = args.parse_args()
 
@@ -132,7 +139,9 @@ aborted. You can use a single dash as the message if you truly want no message.
                           project=gerrit_project, ssh_port=int(gerrit_port),
                           status="open")
         if not arguments:
-            fgerrit.print_reviews_list(fgerrit.list_reviews())
+            fgerrit.print_reviews_list(
+                fgerrit.list_reviews(), show_wip=options.wip,
+                branches=(options.branches or 'master').split(','))
         elif arguments[0] == 'mark':
             open('.fgerrit-mark', 'w')
         elif arguments[0] == 'submit':
