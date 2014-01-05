@@ -58,8 +58,18 @@ Here's all the options:
 
     Avaliable Commands:
         <nothing>                lists pending reviews
+        mark                     touches the file in .fgerrit-mark which is used by
+                                 the above listing to only show newer changes
         <id>                     shows review information
-        <id> checkout            checks out the code for a review
+        <id> show                like git-show but for the patch set <id>,
+                                 note that this will change your FETCH_HEAD
+        <id> checkout [patch#]   checks out the code for a review; the optional
+                                 [patch#] lets you checkout a specific patchset
+                                 note that this will change your FETCH_HEAD
+        <id> diffsince [patch#]  shows a diff of what you have checked out locally
+                                 vs. the code at <id>
+                                 [patch#] lets you diff a specific patchset
+                                 note that this will change your FETCH_HEAD
         <id> post     [message]  posts a message to a review
         <id> -2       [message]  indicates a strong "do not merge" opinion
         <id> -1       [message]  indicates a normal "do not merge" opinion
@@ -78,14 +88,18 @@ Here's all the options:
 
     If [message] is not specified, your $FGERRIT_EDITOR or $EDITOR will be loaded
     up for you create a message. If you save an empty message, the command will be
-    aborted.
+    aborted. You can use a single dash as the message if you truly want no message.
 
     Options:
-      -h, --help         show this help message and exit
-      --host=HOST        Gerrit hostname or ip
-      --port=PORT        Gerrit port
-      --user=USER        Gerrit user
-      --project=PROJECT  Gerrit project
+      -h, --help           show this help message and exit
+      --host=HOST          Gerrit hostname or ip
+      --port=PORT          Gerrit port
+      --user=USER          Gerrit user
+      --project=PROJECT    Gerrit project
+      --wip                Include works-in-progress in the listing of pending
+                           reviews
+      --branches=BRANCHES  The branch names to include in the listing of pending
+                           reviews; defaults to just master.
 
 ## Installation
 
