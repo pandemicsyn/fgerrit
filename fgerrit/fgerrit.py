@@ -298,7 +298,8 @@ class FGerrit(object):
         if error_code != 0:
             raise Exception('Error code %d from %s' % (error_code, cmd))
         cmd = ['git', 'checkout', '-b',
-               'review-' + data['topic'] + '-ps' + patchset_number,
+               'review-' + data.get('topic', change_id) +
+               '-ps' + patchset_number,
                'FETCH_HEAD']
         error_code = subprocess.Popen(cmd).wait()
         if error_code != 0:
