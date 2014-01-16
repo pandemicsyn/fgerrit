@@ -103,6 +103,7 @@ class FGerrit(object):
         p = subprocess.Popen(sshcmd, shell=True, stdout=tmp,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
+        tmp.seek(0)
         if retval != 0:
             raise Exception('Error on ssh to gerrit %s' % tmp.readlines())
         if not plain:
@@ -122,6 +123,7 @@ class FGerrit(object):
         p = subprocess.Popen(sshcmd, shell=True, stdout=tmp,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
+        tmp.seek(0)
         if retval != 0:
             raise Exception('Error on ssh to gerrit %s' % tmp.readlines())
         return " ".join(tmp.readlines())
