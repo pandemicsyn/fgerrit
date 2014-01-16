@@ -99,30 +99,32 @@ class FGerrit(object):
         else:
             sshcmd = 'ssh -p %d %s@%s "gerrit query --format=TEXT %s"' % \
                 (self.ssh_port, self.ssh_user, self.ssh_host, qargs)
-        p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
+        tmp = tempfile.TemporaryFile()
+        p = subprocess.Popen(sshcmd, shell=True, stdout=tmp,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
         if retval != 0:
-            raise Exception('Error on ssh to gerrit %s' % p.stdout.readlines())
+            raise Exception('Error on ssh to gerrit %s' % tmp.readlines())
         if not plain:
             result = []
-            for line in p.stdout.readlines():
+            for line in tmp.readlines():
                 result.append(json.loads(line))
             retval = p.wait()
             return [x for x in result if 'status' in x]
         else:
-            return " ".join(p.stdout.readlines())
+            return " ".join(tmp.readlines())
 
     def _run_cmd(self, cargs):
         sshcmd = "ssh -p %d %s@%s %s" % (
             self.ssh_port, self.ssh_user, self.ssh_host,
             arg_encode('gerrit ' + cargs))
-        p = subprocess.Popen(sshcmd, shell=True, stdout=subprocess.PIPE,
+        tmp = tempfile.TemporaryFile()
+        p = subprocess.Popen(sshcmd, shell=True, stdout=tmp,
                              stderr=subprocess.STDOUT)
         retval = p.wait()
         if retval != 0:
-            raise Exception('Error on ssh to gerrit %s' % p.stdout.readlines())
-        return " ".join(p.stdout.readlines())
+            raise Exception('Error on ssh to gerrit %s' % tmp.readlines())
+        return " ".join(tmp.readlines())
 
     def list_reviews(self):
         return self._run_query(
