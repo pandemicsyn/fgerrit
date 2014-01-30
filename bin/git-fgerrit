@@ -202,6 +202,7 @@ aborted. You can use a single dash as the message if you truly want no message.
                 elif command in ('approve', 'approved'):
                     if arguments:
                         args.error('<id> %s [<message>]' % command)
+                    message = arguments.pop(0) if arguments else ''
                     message = get_message(message)
                     # Send a +2 first
                     fgerrit.code_review(change_id, "+2", message)
