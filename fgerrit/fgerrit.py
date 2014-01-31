@@ -74,9 +74,9 @@ class FGerrit(object):
     def _cprint(self, output):
         """either print output or invoke pager"""
         if self.term_rows < sum([len(i.split('\n')) for i in output]):
-            pydoc.pager('\n'.join(output).encode('utf8'))
+            pydoc.pager('\n'.join(output).decode('utf8').encode('utf8'))
         else:
-            print '\n'.join(output).encode('utf8')
+            print '\n'.join(output).decode('utf8').encode('utf8')
 
     def _conv_ts(self, timestamp, terse=False):
         if terse:
